@@ -44,7 +44,7 @@ func printTopNResults(counts map[string]int, n int) {
 
 	// Sort counts by descending value.
 	var keyValues []kv
-	longest := 0
+	longest := 6
 	for k, v := range counts {
 		if len(k) > longest {
 			longest = len(k)
@@ -57,6 +57,9 @@ func printTopNResults(counts map[string]int, n int) {
 
 	// Print the top n counts.
 	format := "[%03d]: [%-" + strconv.Itoa(longest) + "s] => [%d]\n"
+	hdr := fmt.Sprintf("%-6s %-"+strconv.Itoa(longest+5)+"s %5s\n", "Rank", "Phrase", "Count")
+	fmt.Printf(hdr)
+	fmt.Printf("%s\n", strings.Repeat("-", len(hdr)))
 	for i, kv := range keyValues {
 		if i == n {
 			break

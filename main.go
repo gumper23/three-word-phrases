@@ -60,8 +60,9 @@ func printTopNResults(counts map[string]int, n int) {
 	var keyValues []kv
 	longest := 6
 	for k, v := range counts {
-		if len(k) > longest {
-			longest = len(k)
+		length := len(k)
+		if length > longest {
+			longest = length
 		}
 		keyValues = append(keyValues, kv{k, v})
 	}
@@ -90,24 +91,21 @@ func threeWordPhrases(contents []byte) (counts map[string]int, err error) {
 	// Convert contents to a lowercase string.
 	s := strings.ToLower(string(contents))
 
-	// Replace all non-word characters with a space.
-	re, err := regexp.Compile("\\W+")
-	if err != nil {
-		return
-	}
-	s = re.ReplaceAllString(s, " ")
-
-	// Replace multiple whitespace characters with a single space.
-	re, err = regexp.Compile("\\s+")
+	// Replace all non-word characters with a space, except for an apostrophe or hypen.
+	re, err := regexp.Compile("[^[:alnum:][:space:]'-]")
 	if err != nil {
 		return
 	}
 	s = re.ReplaceAllString(s, " ")
 
 	// Count the three word phrases.
-	words := strings.Split(s, " ")
+	re, err = regexp.Compile("[[:space:]]+")
+	if err != nil {
+		return
+	}
+	words := re.Split(s, -1)
 	for i := 0; i < len(words)-2; i++ {
-		phrase := words[i] + " " + words[i+1] + " " + words[i+2]
+		phrase := fmt.Sprintf("%s %s %s", words[i], words[i+1], words[i+2])
 		counts[phrase]++
 	}
 	return

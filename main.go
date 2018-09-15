@@ -27,6 +27,7 @@ func main() {
 		results, err := threeWordPhrases(contents)
 		printTopNResults(results, 10)
 	} else {
+		// Multi-threaded parsing of passed-in files.
 		var wg sync.WaitGroup
 		for i := 1; i < len(os.Args); i++ {
 			wg.Add(1)
@@ -58,7 +59,7 @@ func printTopNResults(counts map[string]int, n int) {
 
 	// Sort counts by descending value.
 	var keyValues []kv
-	longest := 6
+	longest := len("Three-Word Phrase")
 	for k, v := range counts {
 		length := len(k)
 		if length > longest {
@@ -72,9 +73,9 @@ func printTopNResults(counts map[string]int, n int) {
 
 	// Print the top n counts.
 	format := "[%03d]: [%-" + strconv.Itoa(longest) + "s] => [%d]\n"
-	hdr := fmt.Sprintf("%-6s %-"+strconv.Itoa(longest+5)+"s %5s\n", "Rank", "Three-Word Phrase", "Count")
-	fmt.Printf(hdr)
-	fmt.Printf("%s\n", strings.Repeat("-", len(hdr)))
+	header := fmt.Sprintf("%-6s %-"+strconv.Itoa(longest+5)+"s %5s\n", "Rank", "Three-Word Phrase", "Count")
+	fmt.Printf(header)
+	fmt.Printf("%s\n", strings.Repeat("-", len(header)))
 	for i, kv := range keyValues {
 		if i == n {
 			break

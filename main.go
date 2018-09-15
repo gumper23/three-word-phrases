@@ -11,6 +11,7 @@ import (
 	"strings"
 )
 
+// rm three-word-phrases && go build -o three-word-phrases main.go && ./three-word-phrases pg2009.txt
 func main() {
 	// Read from file names passed on the command line or stdin.
 	if len(os.Args) == 1 {
@@ -19,7 +20,7 @@ func main() {
 			log.Fatalf("error reading stdin [%s]\n", err.Error())
 		}
 		results, err := threeWordPhrases(contents)
-		printTopNResults(results, 100)
+		printTopNResults(results, 10)
 	} else {
 		for i := 1; i < len(os.Args); i++ {
 			contents, err := ioutil.ReadFile(os.Args[i])
@@ -30,7 +31,7 @@ func main() {
 			if err != nil {
 				log.Fatalf("error parsing %s: %s", os.Args[i], err.Error())
 			}
-			printTopNResults(results, 100)
+			printTopNResults(results, 10)
 		}
 	}
 }
@@ -57,7 +58,7 @@ func printTopNResults(counts map[string]int, n int) {
 
 	// Print the top n counts.
 	format := "[%03d]: [%-" + strconv.Itoa(longest) + "s] => [%d]\n"
-	hdr := fmt.Sprintf("%-6s %-"+strconv.Itoa(longest+5)+"s %5s\n", "Rank", "Phrase", "Count")
+	hdr := fmt.Sprintf("%-6s %-"+strconv.Itoa(longest+5)+"s %5s\n", "Rank", "Three-Word Phrase", "Count")
 	fmt.Printf(hdr)
 	fmt.Printf("%s\n", strings.Repeat("-", len(hdr)))
 	for i, kv := range keyValues {

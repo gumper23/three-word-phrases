@@ -17,7 +17,10 @@ import (
 // wget http://www.gutenberg.org/cache/epub/16328/pg16328.txt
 // wget https://www.gutenberg.org/files/2600/2600-0.txt
 // go build -o three-word-phrases main.go && ./three-word-phrases pg2009.txt pg16328.txt pg10.txt 2600-0.txt
+
 func main() {
+	const ranks = 10
+
 	// Read from file names passed on the command line or stdin.
 	if len(os.Args) == 1 {
 		contents, err := ioutil.ReadAll(os.Stdin)
@@ -25,7 +28,7 @@ func main() {
 			log.Fatalf("error reading stdin [%s]\n", err.Error())
 		}
 		results, err := threeWordPhrases(contents)
-		printTopNResults(results, 100)
+		printTopNResults(results, ranks)
 	} else {
 		// Multi-threaded parsing of passed-in files.
 		var wg sync.WaitGroup
@@ -43,7 +46,7 @@ func main() {
 					fmt.Fprintf(os.Stderr, "%s\n\n", err.Error())
 					return
 				}
-				printTopNResults(results, 100)
+				printTopNResults(results, ranks)
 			}(os.Args[i])
 		}
 		wg.Wait()
@@ -93,14 +96,14 @@ func threeWordPhrases(contents []byte) (counts map[string]int, err error) {
 	s := strings.ToLower(string(contents))
 
 	// Replace all non-word characters with a space, except for an apostrophe or hypen.
-	re, err := regexp.Compile("[^[:alnum:][:space:]'-]")
+	re, err := regexp.Compile("[^\\w\\s]")
 	if err != nil {
 		return
 	}
 	s = re.ReplaceAllString(s, " ")
 
 	// Count the three word phrases.
-	re, err = regexp.Compile("[[:space:]]+")
+	re, err = regexp.Compile("\\s+")
 	if err != nil {
 		return
 	}

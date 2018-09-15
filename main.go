@@ -11,11 +11,6 @@ import (
 	"strings"
 )
 
-type kv struct {
-	Key   string
-	Value int
-}
-
 func main() {
 	// Read from file names passed on the command line or stdin.
 	if len(os.Args) == 1 {
@@ -24,7 +19,7 @@ func main() {
 			log.Fatalf("error reading stdin [%s]\n", err.Error())
 		}
 		results, err := threeWordPhrases(contents)
-		printResults(results)
+		printTopNResults(results, 100)
 	} else {
 		for i := 1; i < len(os.Args); i++ {
 			contents, err := ioutil.ReadFile(os.Args[i])
@@ -35,12 +30,18 @@ func main() {
 			if err != nil {
 				log.Fatalf("error parsing %s: %s", os.Args[i], err.Error())
 			}
-			printResults(results)
+			printTopNResults(results, 100)
 		}
 	}
 }
 
-func printResults(counts map[string]int) {
+// printTopNResults prints the top N results to stdout.
+func printTopNResults(counts map[string]int, n int) {
+	type kv struct {
+		Key   string
+		Value int
+	}
+
 	// Sort counts by descending value.
 	var keyValues []kv
 	longest := 0
@@ -54,25 +55,24 @@ func printResults(counts map[string]int) {
 		return keyValues[i].Value > keyValues[j].Value
 	})
 
-	// Print the top 100 counts.
+	// Print the top n counts.
 	format := "[%03d]: [%-" + strconv.Itoa(longest) + "s] => [%d]\n"
-	fmt.Printf("%s", format)
 	for i, kv := range keyValues {
-		if i == 100 {
+		if i == n {
 			break
 		}
 		fmt.Printf(format, i+1, kv.Key, kv.Value)
 	}
 }
 
-// threeWordPhrases counts the three word phrases in contents
+// threeWordPhrases counts the three word phrases in contents.
 func threeWordPhrases(contents []byte) (counts map[string]int, err error) {
 	counts = make(map[string]int)
 
-	// Convert the contents to lowercase.
+	// Convert contents to a lowercase string.
 	s := strings.ToLower(string(contents))
 
-	// Replace all punctuation characters with a space.
+	// Replace all non-word characters with a space.
 	re, err := regexp.Compile("\\W+")
 	if err != nil {
 		return
@@ -86,7 +86,7 @@ func threeWordPhrases(contents []byte) (counts map[string]int, err error) {
 	}
 	s = re.ReplaceAllString(s, " ")
 
-	// Count the three word phrases
+	// Count the three word phrases.
 	words := strings.Split(s, " ")
 	for i := 0; i < len(words)-2; i++ {
 		phrase := words[i] + " " + words[i+1] + " " + words[i+2]

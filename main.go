@@ -25,7 +25,7 @@ func main() {
 			log.Fatalf("error reading stdin [%s]\n", err.Error())
 		}
 		results, err := threeWordPhrases(contents)
-		printTopNResults(results, 10)
+		printTopNResults(results, 100)
 	} else {
 		// Multi-threaded parsing of passed-in files.
 		var wg sync.WaitGroup
@@ -43,7 +43,7 @@ func main() {
 					fmt.Fprintf(os.Stderr, "%s\n\n", err.Error())
 					return
 				}
-				printTopNResults(results, 10)
+				printTopNResults(results, 100)
 			}(os.Args[i])
 		}
 		wg.Wait()

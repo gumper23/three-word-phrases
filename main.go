@@ -9,9 +9,14 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 )
 
-// rm three-word-phrases && go build -o three-word-phrases main.go && ./three-word-phrases pg2009.txt
+// wget http://www.gutenberg.org/cache/epub/10/pg10.txt
+// wget http://www.gutenberg.org/cache/epub/2009/pg2009.txt
+// wget http://www.gutenberg.org/cache/epub/16328/pg16328.txt
+// wget https://www.gutenberg.org/files/2600/2600-0.txt
+// go build -o three-word-phrases main.go && ./three-word-phrases pg2009.txt pg16328.txt pg10.txt 2600-0.txt
 func main() {
 	// Read from file names passed on the command line or stdin.
 	if len(os.Args) == 1 {
@@ -22,17 +27,25 @@ func main() {
 		results, err := threeWordPhrases(contents)
 		printTopNResults(results, 10)
 	} else {
+		var wg sync.WaitGroup
 		for i := 1; i < len(os.Args); i++ {
-			contents, err := ioutil.ReadFile(os.Args[i])
-			if err != nil {
-				log.Fatalf("error reading %s: %s", os.Args[i], err.Error())
-			}
-			results, err := threeWordPhrases(contents)
-			if err != nil {
-				log.Fatalf("error parsing %s: %s", os.Args[i], err.Error())
-			}
-			printTopNResults(results, 10)
+			wg.Add(1)
+			go func(file string) {
+				defer wg.Done()
+				contents, err := ioutil.ReadFile(file)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "%s\n\n", err.Error())
+					return
+				}
+				results, err := threeWordPhrases(contents)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "%s\n\n", err.Error())
+					return
+				}
+				printTopNResults(results, 10)
+			}(os.Args[i])
 		}
+		wg.Wait()
 	}
 }
 
@@ -67,6 +80,7 @@ func printTopNResults(counts map[string]int, n int) {
 		}
 		fmt.Printf(format, i+1, kv.Key, kv.Value)
 	}
+	fmt.Println()
 }
 
 // threeWordPhrases counts the three word phrases in contents.

@@ -95,7 +95,7 @@ func threeWordPhrases(contents []byte) (counts map[string]int, err error) {
 	// Convert contents to a lowercase string.
 	s := strings.ToLower(string(contents))
 
-	// Replace all non-word characters with a space, except for an apostrophe or hypen.
+	// Replace all non-word characters with a space.
 	re, err := regexp.Compile("[^\\w\\s]")
 	if err != nil {
 		return

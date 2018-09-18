@@ -17,7 +17,6 @@ import (
 // wget http://www.gutenberg.org/cache/epub/16328/pg16328.txt
 // wget https://www.gutenberg.org/files/2600/2600-0.txt
 // go build -o three-word-phrases main.go && ./three-word-phrases pg2009.txt pg16328.txt pg10.txt 2600-0.txt
-
 func main() {
 	const ranks = 10
 

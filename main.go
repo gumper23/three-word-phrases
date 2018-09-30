@@ -19,7 +19,7 @@ import (
 func main() {
 	const ranks = 10
 
-	// Read from file names passed on the command line or stdin.
+	// Read contents from stdin or file names passed on the command line.
 	if len(os.Args) == 1 {
 		contents, err := ioutil.ReadAll(os.Stdin)
 		if err != nil {
@@ -28,23 +28,35 @@ func main() {
 		results, err := threeWordPhrases(contents)
 		printTopNResults(results, ranks)
 	} else {
-		ch := make(chan map[string]int)
-		for _, file := range os.Args[1:] {
-			go func(file string, ch chan map[string]int) {
-				contents, err := ioutil.ReadFile(file)
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "%s\n\n", err.Error())
-					return
+		// Create a Go routine for each file passed in.
+		files := make(chan string)
+		results := make(chan map[string]int)
+		for range os.Args[1:] {
+			go func(files <-chan string, results chan<- map[string]int) {
+				for file := range files {
+					contents, err := ioutil.ReadFile(file)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "%s\n\n", err.Error())
+						return
+					}
+					result, err := threeWordPhrases(contents)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "%s\n\n", err.Error())
+						return
+					}
+					results <- result
 				}
-				results, err := threeWordPhrases(contents)
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "%s\n\n", err.Error())
-					return
-				}
-				ch <- results
-			}(file, ch)
+			}(files, results)
 		}
-		for result := range ch {
+
+		// Populate the files channel and close it.
+		for _, file := range os.Args[1:] {
+			files <- file
+		}
+		close(files)
+
+		// Print the results.
+		for result := range results {
 			printTopNResults(result, ranks)
 		}
 	}

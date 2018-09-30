@@ -9,7 +9,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 )
 
 // wget http://www.gutenberg.org/cache/epub/10/pg10.txt
@@ -29,12 +28,9 @@ func main() {
 		results, err := threeWordPhrases(contents)
 		printTopNResults(results, ranks)
 	} else {
-		// Multi-threaded parsing of passed-in files.
-		var wg sync.WaitGroup
-		for i := 1; i < len(os.Args); i++ {
-			wg.Add(1)
-			go func(file string) {
-				defer wg.Done()
+		ch := make(chan map[string]int)
+		for _, file := range os.Args[1:] {
+			go func(file string, ch chan map[string]int) {
 				contents, err := ioutil.ReadFile(file)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "%s\n\n", err.Error())
@@ -45,10 +41,12 @@ func main() {
 					fmt.Fprintf(os.Stderr, "%s\n\n", err.Error())
 					return
 				}
-				printTopNResults(results, ranks)
-			}(os.Args[i])
+				ch <- results
+			}(file, ch)
 		}
-		wg.Wait()
+		for result := range ch {
+			printTopNResults(result, ranks)
+		}
 	}
 }
 

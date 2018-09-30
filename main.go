@@ -28,9 +28,10 @@ func main() {
 		results, err := threeWordPhrases(contents)
 		printTopNResults(results, ranks)
 	} else {
+		// Concurrently parse files.
 		ch := make(chan map[string]int)
-		for _, file := range os.Args[1:] {
-			go func(file string, ch chan map[string]int) {
+		go func(files []string, ch chan map[string]int) {
+			for _, file := range files {
 				contents, err := ioutil.ReadFile(file)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "%s\n\n", err.Error())
@@ -42,8 +43,11 @@ func main() {
 					return
 				}
 				ch <- results
-			}(file, ch)
-		}
+			}
+			close(ch)
+		}(os.Args[1:], ch)
+
+		// Output the results as they become ready.
 		for result := range ch {
 			printTopNResults(result, ranks)
 		}

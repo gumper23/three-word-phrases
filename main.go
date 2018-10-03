@@ -31,7 +31,7 @@ func main() {
 		// Create a Go routine for each file passed in.
 		files := make(chan string)
 		results := make(chan map[string]int)
-		for range os.Args[1:] {
+		for _, file := range os.Args[1:] {
 			go func(files <-chan string, results chan<- map[string]int) {
 				for file := range files {
 					contents, err := ioutil.ReadFile(file)
@@ -47,10 +47,6 @@ func main() {
 					results <- result
 				}
 			}(files, results)
-		}
-
-		// Populate the files channel and close it.
-		for _, file := range os.Args[1:] {
 			files <- file
 		}
 		close(files)

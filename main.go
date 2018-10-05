@@ -9,17 +9,18 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 // wget http://www.gutenberg.org/cache/epub/10/pg10.txt
 // wget http://www.gutenberg.org/cache/epub/2009/pg2009.txt
 // wget http://www.gutenberg.org/cache/epub/16328/pg16328.txt
 // wget https://www.gutenberg.org/files/2600/2600-0.txt
-// go build -o three-word-phrases main.go && ./three-word-phrases pg2009.txt pg16328.txt pg10.txt 2600-0.txt
+// go build -o three-word-phrases main.go && time ./three-word-phrases pg2009.txt pg16328.txt pg10.txt 2600-0.txt
 func main() {
 	const ranks = 10
 
-	// Read from file names passed on the command line or stdin.
+	// Read contents from stdin or file names passed on the command line.
 	if len(os.Args) == 1 {
 		contents, err := ioutil.ReadAll(os.Stdin)
 		if err != nil {
@@ -28,25 +29,30 @@ func main() {
 		results, err := threeWordPhrases(contents)
 		printTopNResults(results, ranks)
 	} else {
-		ch := make(chan map[string]int)
+		// Create a Go routine for each file passed in.
+		// Use a Mutex to prevent inter-mingling of output.
+		var mu sync.Mutex
+		var wg sync.WaitGroup
 		for _, file := range os.Args[1:] {
-			go func(file string, ch chan map[string]int) {
+			wg.Add(1)
+			go func(file string) {
+				defer wg.Done()
 				contents, err := ioutil.ReadFile(file)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "%s\n\n", err.Error())
 					return
 				}
-				results, err := threeWordPhrases(contents)
+				result, err := threeWordPhrases(contents)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "%s\n\n", err.Error())
 					return
 				}
-				ch <- results
-			}(file, ch)
+				mu.Lock()
+				defer mu.Unlock()
+				printTopNResults(result, ranks)
+			}(file)
 		}
-		for result := range ch {
-			printTopNResults(result, ranks)
-		}
+		wg.Wait()
 	}
 }
 

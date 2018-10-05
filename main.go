@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 // wget http://www.gutenberg.org/cache/epub/10/pg10.txt
@@ -29,32 +30,29 @@ func main() {
 		printTopNResults(results, ranks)
 	} else {
 		// Create a Go routine for each file passed in.
-		files := make(chan string)
-		results := make(chan map[string]int)
+		// Use a Mutex to prevent inter-mingling of output.
+		var mu sync.Mutex
+		var wg sync.WaitGroup
 		for _, file := range os.Args[1:] {
-			go func(files <-chan string, results chan<- map[string]int) {
-				for file := range files {
-					contents, err := ioutil.ReadFile(file)
-					if err != nil {
-						fmt.Fprintf(os.Stderr, "%s\n\n", err.Error())
-						return
-					}
-					result, err := threeWordPhrases(contents)
-					if err != nil {
-						fmt.Fprintf(os.Stderr, "%s\n\n", err.Error())
-						return
-					}
-					results <- result
+			wg.Add(1)
+			go func(file string) {
+				defer wg.Done()
+				contents, err := ioutil.ReadFile(file)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "%s\n\n", err.Error())
+					return
 				}
-			}(files, results)
-			files <- file
+				result, err := threeWordPhrases(contents)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "%s\n\n", err.Error())
+					return
+				}
+				mu.Lock()
+				printTopNResults(result, ranks)
+				mu.Unlock()
+			}(file)
 		}
-		close(files)
-
-		// Print the results.
-		for result := range results {
-			printTopNResults(result, ranks)
-		}
+		wg.Wait()
 	}
 }
 
